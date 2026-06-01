@@ -14,21 +14,28 @@ ANGLE_THRESHOLD = 15 # degrees
 
 def make_decision(calc_angles: list):
     for sign in JOINT_CONSTANTS.keys():
-        if (check_requirements(JOINT_CONSTANTS[sign])):
+        if (check_requirements(JOINT_CONSTANTS[sign], calc_angles)):
+            print("Sign predicted!")
             return sign
     return "Waiting"
 
 def check_requirements(req: list, calc_angles: list) -> bool:
-    if len(req[1]) == 1:
-        angle = req[1][0]
+    if isinstance(req[1], int):
+        angle = req[1]
 
     conds : bool = []
     for pair in req[0]:
-        conds.append(calc_angles[pair] < (angle + ANGLE_THRESHOLD) and calc_angles[pair] > (angle - ANGLE_THRESHOLD))
-        if all(conds):
-            return True
-        else:
+        try:
+            conds.append(calc_angles[pair] < (angle + ANGLE_THRESHOLD) and calc_angles[pair] > (angle - ANGLE_THRESHOLD))
+            print(f"ANGLES {pair}: {calc_angles[pair]}\n")
+        except:
+            print("Angles not found")
             return False
+
+    if all(conds):
+        return True
+    else:
+        return False
 
 
 
@@ -79,18 +86,10 @@ while cap.isOpened():
         print("Person is lost")
         # current_landmarks = [0.0] * (33 * 4) # Fallback if person is lost
 
-    make_decision()
+    predicted_gesture = make_decision(current_angles)
     # simple logic (1 sign)
     try:
-        # angle = joint_rules["1"][0][0]
-        angle = -90
-        print(f"Angle of a joint: {angle}")
-        war1 = current_angles['12-14'] < (angle + ANGLE_THRESHOLD) and current_angles['12-14'] > (angle - ANGLE_THRESHOLD)
-        war2 = current_angles['14-16'] < (angle + ANGLE_THRESHOLD) and current_angles['14-16'] > (angle - ANGLE_THRESHOLD)
-        if (war1) and (war2):
-            predicted_gesture = "Sign 1"
-            print("Sign predicted!")
-        print(f"ANGLES 12-14: {current_angles['12-14']}\n")
+        # print(f"ANGLES 12-14: {current_angles['12-14']}\n")
         print(f"ANGLES 14-16: {current_angles['14-16']}\n")
     except:
         print("Bibki")
