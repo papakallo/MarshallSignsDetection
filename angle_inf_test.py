@@ -7,8 +7,10 @@ import math
 
 # joint pairs , angles
 JOINT_CONSTANTS = {
-        "1": [("12-14", "14-16"), (-90)],
-        # "2": [("12-14", "14-16", "16-22"), (0, 0, -90)]
+        "1": [("12-14", "14-16"), (-90, -90)],
+        "2": [("12-14", "14-16", "16-22"), (180, 180, -160)], # 2 and 3 are very tricky, thumb should be at 90 but reasons
+        "3": [("12-14", "14-16", "16-22"), (180, 180, 160)],
+        "23": [("12-14", "14-16"), (-120, -115)] # values picked blindly
         }
 
 ANGLE_THRESHOLD = 15 # degrees
@@ -27,19 +29,26 @@ def check_requirements(req: list, calc_angles: list) -> bool:
         angles = req[1]
 
     conds : bool = []
-    for pair in req[0]:
-        for angle in angles:
+    for pair, angle in zip(req[0], angles):
+    # for pair in req[0]:
+        # for angle in angles:
             try:
                 conds.append(calc_angles[pair] < (angle + ANGLE_THRESHOLD) and calc_angles[pair] > (angle - ANGLE_THRESHOLD))
                 print(f"ANGLES {pair}: {calc_angles[pair]}\n")
             except:
-                print("Angles not found")
+                print(f"Angle for {pair} not found")
                 return False
 
     if all(conds):
         return True
     else:
         return False
+
+def calculate_angle(next_landmark, landmark):
+    diff_y = next_landmark.y - landmark.y
+    diff_x = next_landmark.x - landmark.x
+    angle = math.degrees(math.atan2(diff_y, diff_x))
+    return angle
 
 
 
@@ -72,19 +81,15 @@ while cap.isOpened():
                 if idx == 22 or idx == 21: continue
 
                 next_landmark = landmark_list[idx+2]
-                diff_y = next_landmark.y - landmark.y
-                diff_x = next_landmark.x - landmark.x
-                angle = math.degrees(math.atan2(diff_y, diff_x))
-                current_angles[f"{idx}-{idx+2}"] = angle
+                current_angles[f"{idx}-{idx+2}"] = calculate_angle(next_landmark, landmark)
 
                 # hand joints
                 if idx in [15, 16]:
-
                     next_landmark = landmark_list[idx+4]
-                    diff_y = next_landmark.y - landmark.y
-                    diff_x = next_landmark.x - landmark.x
-                    angle = math.degrees(math.atan2(diff_y, diff_x))
-                    current_angles[f"{idx}-{idx+4}"] = angle
+                    current_angles[f"{idx}-{idx+4}"] = calculate_angle(next_landmark, landmark)
+                    next_landmark = landmark_list[idx+6]
+                    current_angles[f"{idx}-{idx+6}"] = calculate_angle(next_landmark, landmark)
+
 
     else:
         print("Person is lost")
