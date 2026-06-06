@@ -4,24 +4,43 @@ import numpy as np
 import pandas as pd
 import time
 import math
+from gpiozero import LED
+
+LEDS = {
+    "green": LED(14),
+    "red": LED(21),
+    "blue": LED(18),
+    "yellow": LED(23)
+}
 
 # joint pairs , angles
 JOINT_CONSTANTS = {
-        "1": [("12-14", "14-16"), (-90, -90)],
-        "2": [("12-14", "14-16", "16-22"), (180, 180, -160)], # 2 and 3 are very tricky, thumb should be at 90 but reasons (still very buggy)
-        "3": [("12-14", "14-16", "16-22"), (180, 180, 160)],
-        "13": [("12-14", "14-16", "11-13", "13-15"), (180, 180, 160)], #TODO:
-        "14": [("12-14", "14-16", "11-13", "13-15"), (180, 180, 160)],
-        "23": [("12-14", "14-16"), (-120, -115)] # values picked blindly (good)
+        "1": [("12-14", "14-16"), (-90, -90), ["green"]],
+        "2": [("12-14", "14-16", "16-22"), (180, 180, -160), ["red"]], # 2 and 3 are very tricky, thumb should be at 90 but reasons (still very buggy)
+        "3": [("12-14", "14-16", "16-22"), (180, 180, 160), ["blue"]],
+        "13": [("12-14", "14-16", "11-13", "13-15"), (180, 180, 160), ["yellow"]], #TODO:
+        "14": [("12-14", "14-16", "11-13", "13-15"), (180, 180, 160), ["green", "red"]],
+        "23": [("12-14", "14-16"), (-120, -115), ["blue", "yellow"]] # values picked blindly (good)
         }
 
 ANGLE_THRESHOLD = 15 # degrees
 
+def turn_off_all_leds():
+    for led in LEDS.values():
+        led.off()
+
 def make_decision(calc_angles: list):
-    for sign in JOINT_CONSTANTS.keys():
-        if (check_requirements(JOINT_CONSTANTS[sign], calc_angles)):
+    for sign, reqs in JOINT_CONSTANTS.items():
+        if (check_requirements(reqs, calc_angles)):
             print("Sign predicted!")
+            turn_off_all_leds()
+            
+            colors_to_light = reqs[2]
+            for color in colors_to_light:
+                if color in LEDS:
+                    LEDS[color].on()
             return sign
+    turn_off_all_leds()
     return "Waiting"
 
 def check_requirements(req: list, calc_angles: list) -> bool:
